@@ -3,23 +3,29 @@ import { useState } from "react";
 export default function App() {
   /* we put the state higher so we can send it as props to the other child components*/
 
-  const [items, setItem] = useState([]);
+  const [items, setItems] = useState([]);
 
   function handleAddItem(item) {
-    setItem((items) => [...items, item]);
+    setItems((items) => [...items, item]);
   }
 
   function handleDeleteItem(id) {
     // Remove an item from the array by its id and return a new array
-    setItem((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => prev.filter((item) => item.id !== id));
   }
 
   function handleToggleItem(id) {
-    setItem((items) =>
+    setItems((items) =>
       items.map((item) =>
         item.id === id ? { ...item, packed: !item.packed } : item
       )
     );
+  }
+  function handleClearList() {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your entire list? 🥲"
+    );
+    confirmed && setItems([]);
   }
   return (
     <div className="app">
@@ -29,6 +35,7 @@ export default function App() {
         items={items}
         onDeleteItem={handleDeleteItem}
         onToggleItem={handleToggleItem}
+        onClearList={handleClearList}
       />
       <Stats items={items} />
     </div>
@@ -48,7 +55,7 @@ function Form({ onAddItem }) {
     if (!description) return;
     const newItem = { quantity, description, packed: false, id: Date.now() };
 
-    console.log(newItem);
+    // console.log(newItem);
     onAddItem(newItem);
     setDescription("");
     setQuantity(1);
@@ -82,11 +89,21 @@ function Form({ onAddItem }) {
   );
 }
 
-function PackingList({ items, onDeleteItem, onToggleItem }) {
+function PackingList({ items, onDeleteItem, onToggleItem, onClearList }) {
+  const [sortBy, setSortBy] = useState("input");
+  let sortedItems;
+
+  if (sortBy === "input") sortedItems = items;
+  if (sortBy === "description")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => a.description.localeCompare(b.description));
+  if (sortBy === "packed")
+    sortedItems = items.slice().sort((a, b) => Number(a.packed) - b.packed);
   return (
     <div className="list">
       <ul>
-        {items.map((item) => (
+        {sortedItems.map((item) => (
           <Item
             item={item}
             key={item.id}
@@ -95,6 +112,14 @@ function PackingList({ items, onDeleteItem, onToggleItem }) {
           />
         ))}
       </ul>
+      <div className="actions">
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value={"input"}>Sort by input order</option>
+          <option value={"description"}>Sort by description</option>
+          <option value={"packed"}>Sort by packed </option>
+        </select>
+        <button onClick={onClearList}>Clear List</button>
+      </div>
     </div>
   );
 }
